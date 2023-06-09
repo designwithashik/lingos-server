@@ -74,6 +74,35 @@ const client = new MongoClient(uri, {
         next()
       }
 
+      // user instructor verify middleware
+      const verifyInstructor = async (req, res, next) => {
+        const email = req.decoded.email;
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        if (user?.role !== 'instructor') {
+          return res.status(403).send({error: true, message: 'forbidden instructor access'})
+        }
+        next()
+      }
+
+      //users routes
+
+      app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+        const result = await usersCollection.find().toArray()
+        res.send(result)
+      })
+      
+      app.post('/users', async (req, res) => {
+        const user = req.body;
+        const query = { email: user.email }
+        const exitingUser = await usersCollection.findOne(query);
+        if (exitingUser) {
+          return res.send({message: 'User already exists'})
+        }
+        const result = await usersCollection.insertOne(user);
+        res.send(result)
+      })
+
       //classes
       app.get('/classes', async (req, res) => {
         const result = await classesCollection.find().toArray();
