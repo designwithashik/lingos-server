@@ -52,7 +52,27 @@ const client = new MongoClient(uri, {
       const database = client.db('lingos')
       const classesCollection = database.collection('classes')
       const instructorsCollection = database.collection('instructors')
+      const usersCollection = database.collection('users')
 
+
+      //jwt token generator
+      app.post('/jwt', (req, res) => {
+        const user = req.body;
+        const token = jwt.sign(user, process.env.TOKEN_SECRET, { expiresIn: '1h' })
+        res.send({token})
+      })
+
+      //user admin verify middleware
+      
+      const verifyAdmin = async (req, res, next) => {
+        const email = req.decoded.email;
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        if (user?.role !== 'admin') {
+          return res.status(403).send({error: true, message: 'forbidden admin access'})
+        }
+        next()
+      }
 
       //classes
       app.get('/classes', async (req, res) => {
