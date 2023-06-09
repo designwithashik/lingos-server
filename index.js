@@ -91,7 +91,7 @@ const client = new MongoClient(uri, {
         const result = await usersCollection.find().toArray()
         res.send(result)
       })
-      
+
       app.post('/users', async (req, res) => {
         const user = req.body;
         const query = { email: user.email }
@@ -103,12 +103,36 @@ const client = new MongoClient(uri, {
         res.send(result)
       })
 
+          //admin routes
+      app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+        const email = req.params.email;
+        const jwtEmail = req.decoded.email;
+        if (jwtEmail !== email) {
+          res.send({admin: false})
+        }
+        else {
+          res.send({admin: true})
+        }
+      })
+
+
       //classes
       app.get('/classes', async (req, res) => {
         const result = await classesCollection.find().toArray();
         res.send(result)
       })
-      //instructors
+      //instructors routes
+
+      app.get('/users/instructor/:email', verifyJWT, verifyInstructor, async (req, res) => {
+        const email = req.params.email;
+        const jwtEmail = req.decoded.email;
+        if (jwtEmail !== email) {
+          res.send({instructor: false})
+        }
+        else {
+          res.send({ instructor: true})
+        }
+      })
       app.get('/instructors', async (req, res) => {
         const result = await instructorsCollection.find().toArray();
         res.send(result)
