@@ -31,7 +31,7 @@ const verifyJWT = (req, res, next) => {
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.u1007ka.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -114,6 +114,19 @@ const client = new MongoClient(uri, {
           res.send({admin: true})
         }
       })
+      app.patch('/users/admin/:id', async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            role: 'admin'
+          }
+        }
+        const result = await usersCollection.updateOne(filter, updatedDoc)
+        res.send(result)
+      })
+
+
 
 
       //classes
@@ -135,6 +148,18 @@ const client = new MongoClient(uri, {
       })
       app.get('/instructors', async (req, res) => {
         const result = await instructorsCollection.find().toArray();
+        res.send(result)
+      })
+
+      app.patch('/users/instructor/:id', async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            role: 'instructor'
+          }
+        }
+        const result = await usersCollection.updateOne(filter, updatedDoc);
         res.send(result)
       })
       // Send a ping to confirm a successful connection
