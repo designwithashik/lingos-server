@@ -102,6 +102,15 @@ async function run() {
       res.send(result)
     })
     // payment related routes
+    app.get('/payments', async (req, res) => {
+      const email = req.query.email
+      let query = {};
+      if (req.query?.email) {
+        query = { email: email }
+      }
+      const result = await paymentsCollection.find(query).sort({date: -1}).toArray()
+      res.send(result)
+    })
     app.post('/create-payment-intent', verifyJWT, async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
@@ -192,6 +201,27 @@ async function run() {
       const result = await classesCollection.find().toArray();
       res.send(result)
     })
+
+    app.post('/classes', async (req, res) => {
+      const cls = req.body;
+      
+      const result = await classesCollection.insertOne(cls);
+      res.send(result);
+    })
+
+
+    app.patch('/selected-class/approval/:response', async (req, res) => {
+      const {id, decision} = req.params.response;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: decision ? 'approved' : 'denied'
+        }
+      }
+      const result = await classesCollection.updateOne(filter, updatedDoc)
+      res.send(result)
+    })
+
     //instructors routes
 
     app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
@@ -203,7 +233,7 @@ async function run() {
       else {
         const query = { email: email };
         const user = await usersCollection.findOne(query);
-        if (user?.role !== 'admin') {
+        if (user?.role !== 'instructor') {
           return res.send({ instructor: false })
         }
         res.send({ instructor: true })
