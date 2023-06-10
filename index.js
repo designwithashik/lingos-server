@@ -53,6 +53,7 @@ const client = new MongoClient(uri, {
       const classesCollection = database.collection('classes')
       const instructorsCollection = database.collection('instructors')
       const usersCollection = database.collection('users')
+      const selectedClsCollection = database.collection('selectedClass')
 
 
       //jwt token generator
@@ -85,10 +86,38 @@ const client = new MongoClient(uri, {
         next()
       }
 
+
+      // student routes
+
+      app.get('/selected-classes', async (req, res) => {
+        const email  =req.query.email
+        let query = {};
+          if (req.query?.email) {
+              query = {studentEmail: email}
+          }
+        const result = await selectedClsCollection.find(query).toArray()
+        console.log(result)
+        res.send(result)
+      })
+      app.post('/selected-class', async (req, res) => {
+        const cls = req.body;
+        const { classId, studentEmail } = cls;
+        const query = { studentEmail, classId }
+        const exitingCls = await selectedClsCollection.findOne(query);
+        if (exitingCls) {
+          console.log('exiting paise')
+
+          return res.send({message: 'Class already exists'})
+        }
+        const result = await selectedClsCollection.insertOne(cls);
+        res.send(result)
+      })
       //users routes
 
-      app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+      app.get('/users', verifyJWT, async (req, res) => {
+        console.log('hitting here')
         const result = await usersCollection.find().toArray()
+        console.log(result)
         res.send(result)
       })
 
@@ -104,13 +133,18 @@ const client = new MongoClient(uri, {
       })
 
           //admin routes
-      app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+      app.get('/users/admin/:email', verifyJWT, async (req, res) => {
         const email = req.params.email;
         const jwtEmail = req.decoded.email;
         if (jwtEmail !== email) {
           res.send({admin: false})
         }
         else {
+          const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        if (user?.role !== 'admin') {
+          return res.send({admin: false})
+        }
           res.send({admin: true})
         }
       })
@@ -136,13 +170,18 @@ const client = new MongoClient(uri, {
       })
       //instructors routes
 
-      app.get('/users/instructor/:email', verifyJWT, verifyInstructor, async (req, res) => {
+      app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
         const email = req.params.email;
         const jwtEmail = req.decoded.email;
         if (jwtEmail !== email) {
           res.send({instructor: false})
         }
         else {
+          const query = { email: email };
+          const user = await usersCollection.findOne(query);
+          if (user?.role !== 'admin') {
+            return res.send({ instructor: false})
+          }
           res.send({ instructor: true})
         }
       })
