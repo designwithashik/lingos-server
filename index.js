@@ -130,7 +130,17 @@ async function run() {
       const paymentHistory = await paymentsCollection.insertOne(payment)
       const query = { _id: new ObjectId(payment.checkoutId) };
       const deleteResult = await selectedClsCollection.deleteOne(query);
-      res.send({ paymentHistory, deleteResult })
+      const { availableSeats, classId } = payment;
+      const filter = { _id: new ObjectId(classId) }
+      
+      const updatedDoc = {
+        $set: {
+          availableSeats: availableSeats - 1 
+        }
+      }
+      const updateResult = await classesCollection.updateOne(filter, updatedDoc)
+
+      res.send({ paymentHistory, deleteResult, updateResult })
     })
     app.post('/selected-class', async (req, res) => {
       const cls = req.body;
@@ -204,14 +214,19 @@ async function run() {
 
     app.post('/classes', async (req, res) => {
       const cls = req.body;
-      
+      console.log(cls)
+      const { price, availableSeats } = cls;
+      const amount = parseInt(price)
+      const seats = parseInt(availableSeats)
+      cls.price = amount
+      cls.availableSeats = seats;
       const result = await classesCollection.insertOne(cls);
       res.send(result);
     })
 
 
-    app.patch('/selected-class/approval/:response', async (req, res) => {
-      const {id, decision} = req.params.response;
+    app.patch('/selected-class/response', async (req, res) => {
+      const {id, decision} = req.body;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
