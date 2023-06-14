@@ -7,10 +7,15 @@ require("dotenv").config();
 
 const stripe = require("stripe")(process.env.SECRET_KEY_STRIPE);
 
+const corsOptions = {
+  origin: '*',
+  credentials: true,
+  optionSuccessStatus: 200,
+}
 
 //middleware
 app.use(express.json())
-app.use(cors())
+app.use(cors(corsOptions))
 
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
@@ -145,7 +150,7 @@ async function run() {
 
       res.send({ paymentHistory, deleteResult, updateResult })
     })
-    app.post('/selected-class', async (req, res) => {
+    app.post('/selected-class',async (req, res) => {
       const cls = req.body;
       const { classId, studentEmail } = cls;
       const query = { studentEmail, classId }
@@ -160,14 +165,13 @@ async function run() {
     })
     //users routes
 
-    app.get('/users',verifyJWT, async (req, res) => {
-      console.log('hitting here')
+    app.get('/users',verifyJWT, verifyAdmin, async (req, res) => {
+      console.log('hitting here, but why?')
       const result = await usersCollection.find().toArray()
       console.log(result)
       res.send(result)
     })
     app.get('/user/:email', async (req, res) => {
-      console.log('hitting here')
       const email = req.params.email;
       const query = { email: email };
       const result = await usersCollection.findOne(query)
@@ -219,11 +223,7 @@ async function run() {
       const result = await feedbackCollections.insertOne(clsFeedback);
       res.send(result)
     })
-    app.get('/feedback', async (req, res) => {
-
-      const result = await feedbackCollections.find().toArray();
-      res.send(result)      
-    })
+    
 
 
 
@@ -261,10 +261,15 @@ async function run() {
     })
 
     //instructors routes
+    app.get('/feedback', async (req, res) => {
 
-    app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+      const result = await feedbackCollections.find().toArray();
+      res.send(result)      
+    })
+    app.get('/users/instructor/:email',  verifyJWT, async (req, res) => {
       const email = req.params.email;
       const jwtEmail = req.decoded.email;
+      console.log(jwtEmail, 'instructor check')
       if (jwtEmail !== email) {
         res.send({ instructor: false })
       }
