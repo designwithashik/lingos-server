@@ -57,6 +57,7 @@ async function run() {
     const usersCollection = database.collection('users')
     const selectedClsCollection = database.collection('selectedClass')
     const paymentsCollection = database.collection('payments')
+    const feedbackCollections = database.collection('feedbacks')
 
 
     //jwt token generator
@@ -130,12 +131,14 @@ async function run() {
       const paymentHistory = await paymentsCollection.insertOne(payment)
       const query = { _id: new ObjectId(payment.checkoutId) };
       const deleteResult = await selectedClsCollection.deleteOne(query);
-      const { availableSeats, classId } = payment;
+      const { availableSeats, classId, studentsEnrolled } = payment;
+      console.log(studentsEnrolled)
       const filter = { _id: new ObjectId(classId) }
       
       const updatedDoc = {
         $set: {
-          availableSeats: availableSeats - 1 
+          availableSeats: availableSeats - 1,
+          studentsEnrolled: studentsEnrolled + 1
         }
       }
       const updateResult = await classesCollection.updateOne(filter, updatedDoc)
@@ -157,9 +160,17 @@ async function run() {
     })
     //users routes
 
-    app.get('/users', verifyJWT, async (req, res) => {
+    app.get('/users',verifyJWT, async (req, res) => {
       console.log('hitting here')
       const result = await usersCollection.find().toArray()
+      console.log(result)
+      res.send(result)
+    })
+    app.get('/user/:email', async (req, res) => {
+      console.log('hitting here')
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await usersCollection.findOne(query)
       console.log(result)
       res.send(result)
     })
@@ -203,6 +214,16 @@ async function run() {
       res.send(result)
     })
 
+    app.post('/feedback', async (req, res) => {
+      const clsFeedback = req.body;
+      const result = await feedbackCollections.insertOne(clsFeedback);
+      res.send(result)
+    })
+    app.get('/feedback', async (req, res) => {
+
+      const result = await feedbackCollections.find().toArray();
+      res.send(result)      
+    })
 
 
 
@@ -215,11 +236,13 @@ async function run() {
     app.post('/classes', async (req, res) => {
       const cls = req.body;
       console.log(cls)
-      const { price, availableSeats } = cls;
+      const { price, availableSeats, studentsEnrolled } = cls;
       const amount = parseInt(price)
       const seats = parseInt(availableSeats)
+      const enrolled= parseInt(studentsEnrolled)
       cls.price = amount
       cls.availableSeats = seats;
+      cls.studentsEnrolled = enrolled
       const result = await classesCollection.insertOne(cls);
       res.send(result);
     })
