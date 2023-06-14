@@ -137,7 +137,7 @@ async function run() {
       const query = { _id: new ObjectId(payment.checkoutId) };
       const deleteResult = await selectedClsCollection.deleteOne(query);
       const { availableSeats, classId, studentsEnrolled } = payment;
-      console.log(studentsEnrolled)
+     
       const filter = { _id: new ObjectId(classId) }
       
       const updatedDoc = {
@@ -156,7 +156,6 @@ async function run() {
       const query = { studentEmail, classId }
       const exitingCls = await selectedClsCollection.findOne(query);
       if (exitingCls) {
-        console.log('exiting paise')
 
         return res.send({ message: 'Class already exists' })
       }
